@@ -31,7 +31,8 @@ export default function Hero() {
       const car = q(".car")[0];
       const wheels = q(".wheel");
       const dashes = q(".dashes")[0];
-      const stats = q(".stats")[0];
+      const statsTop = q(".stats-top")[0];
+      const statsBottom = q(".stats-bottom")[0];
       const chars = q(".char");
       const statItems = q(".stat");
 
@@ -131,8 +132,9 @@ export default function Hero() {
           })
           .fromTo(car, { x: () => startX }, { x: endX, duration: 0.85 }, 0)
           .to(dashes, { x: -900, duration: 0.85 }, 0)
-          .to(headline, { y: -30, duration: 0.85 }, 0)
-          .to(stats, { y: -40, duration: 0.85 }, 0)
+          .to(headline, { y: -25, duration: 0.85 }, 0)
+          .to(statsTop, { y: -20, duration: 0.85 }, 0)
+          .to(statsBottom, { y: -35, duration: 0.85 }, 0)
           .to({}, { duration: 0.15 }); // hold the finished state at the end
 
         document.fonts.ready.then(() => ScrollTrigger.refresh());
@@ -159,15 +161,16 @@ export default function Hero() {
     <section
       ref={root}
       aria-labelledby="hero-title"
-      className="relative flex h-svh min-h-[560px] flex-col justify-between overflow-hidden bg-ink pb-[6vh] pt-[10vh] md:pt-[12vh]"
+      className="relative flex h-svh min-h-[600px] flex-col justify-between overflow-hidden bg-ink py-[4vh] md:py-[5vh]"
     >
+      {/* 1. Letter-Spaced Headline (Top) */}
       <h1
         id="hero-title"
         aria-label="Welcome ITZFIZZ"
-        className="headline flex flex-col items-center gap-y-1 px-[5vw] text-center font-display text-[11.5vw] font-bold leading-[1.1] tracking-[0.14em] will-change-transform md:flex-row md:flex-wrap md:justify-center md:gap-x-[0.9em] md:text-[clamp(1.6rem,5.4vw,6rem)]"
+        className="headline flex flex-col items-center gap-y-1 px-[5vw] text-center font-display text-[10vw] sm:text-[8vw] md:text-[clamp(1.6rem,4.8vw,5.5rem)] font-bold leading-[1.1] tracking-[0.2em] will-change-transform md:flex-row md:flex-wrap md:justify-center md:gap-x-[1.2em] select-none"
       >
         {WORDS.map((word) => (
-          <span key={word} aria-hidden="true" className="inline-block -mr-[0.14em]">
+          <span key={word} aria-hidden="true" className="inline-block tracking-[0.22em] -mr-[0.22em]">
             {[...word].map((letter, i) => (
               <span key={i} className="char">{letter}</span>
             ))}
@@ -175,7 +178,22 @@ export default function Hero() {
         ))}
       </h1>
 
-      <div className="relative h-[24vh] min-h-[150px] md:h-[28vh]" aria-hidden="true">
+      {/* 2. Top 2 Metrics (Directly Under the Headline) */}
+      <ul className="stats-top mx-auto grid w-full max-w-[820px] grid-cols-2 gap-x-8 sm:gap-x-14 px-[5vw] will-change-transform z-10">
+        {STATS.slice(0, 2).map((s) => (
+          <li key={s.label} className="flex flex-col gap-1.5 opacity-0 stat">
+            <strong className="stat-value font-display text-[clamp(1.6rem,3.4vw,2.8rem)] font-medium leading-none tabular-nums text-signal">
+              {format(s.value, s)}
+            </strong>
+            <span className="max-w-[26ch] text-[0.82rem] text-paper/70 md:text-[0.92rem] leading-snug">
+              {s.label}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      {/* 3. Center Road & Car Stage */}
+      <div className="relative h-[22vh] min-h-[140px] md:h-[26vh]" aria-hidden="true">
         <div className="absolute inset-x-0 bottom-0 h-[38%] overflow-hidden bg-road">
           <div className="dashes absolute -left-[2%] top-1/2 -mt-0.5 h-1 w-[160%] will-change-transform" />
         </div>
@@ -188,13 +206,16 @@ export default function Hero() {
         </div>
       </div>
 
-      <ul className="stats mx-auto grid w-full max-w-[1160px] grid-cols-2 gap-x-6 gap-y-6 px-[5vw] will-change-transform md:grid-cols-4 md:gap-x-10 md:gap-y-8">
-        {STATS.map((s) => (
-          <li key={s.label} className="flex flex-col gap-2 opacity-0 stat">
-            <strong className="stat-value font-display text-[clamp(1.8rem,4vw,3.2rem)] font-medium leading-none tabular-nums text-signal">
+      {/* 4. Bottom 2 Metrics (Under the Road and Car) */}
+      <ul className="stats-bottom mx-auto grid w-full max-w-[820px] grid-cols-2 gap-x-8 sm:gap-x-14 px-[5vw] will-change-transform z-10">
+        {STATS.slice(2, 4).map((s) => (
+          <li key={s.label} className="flex flex-col gap-1.5 opacity-0 stat">
+            <strong className="stat-value font-display text-[clamp(1.6rem,3.4vw,2.8rem)] font-medium leading-none tabular-nums text-signal">
               {format(s.value, s)}
             </strong>
-            <span className="max-w-[22ch] text-[0.85rem] text-paper/70 md:text-[0.95rem]">{s.label}</span>
+            <span className="max-w-[26ch] text-[0.82rem] text-paper/70 md:text-[0.92rem] leading-snug">
+              {s.label}
+            </span>
           </li>
         ))}
       </ul>

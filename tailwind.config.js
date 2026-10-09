@@ -11,8 +11,8 @@ module.exports = {
         paper: "#f5f4ff",
       },
       fontFamily: {
-        display: ["var(--font-display)", "Arial Black", "system-ui", "sans-serif"],
-        body: ["var(--font-body)", "system-ui", "sans-serif"],
+        display: ["Unbounded", "Arial Black", "system-ui", "sans-serif"],
+        body: ["'DM Sans'", "system-ui", "sans-serif"],
       },
     },
   },
