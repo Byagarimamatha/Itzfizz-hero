@@ -1,44 +1,42 @@
-# ITZFIZZ — Scroll-Driven Hero Section Animation
+# Welcome ITZFIZZ — Scroll-Driven Hero Section Animation
 
-> Recreated and elevated hero section scroll animation inspired by the [reference demo](https://paraschaturvedi.github.io/car-scroll-animation), built with **Next.js 14**, **Tailwind CSS**, and **GSAP ScrollTrigger**.
+> A high-performance, scroll-driven hero section animation built with **Next.js 14**, **Tailwind CSS**, and **GSAP ScrollTrigger**, featuring a custom vector mid-engine GT sports car with physics-based wheel rotation and headlight letter illumination.
 
 ---
 
-## 🌟 Assignment Overview & Objectives
+## 🌟 Assignment Implementation & Features
 
-This project recreates the interactive scroll-driven hero section inspired by the reference demo, focusing on motion quality, smoothness, interaction logic, and modern frontend best practices.
+This project implements the hero section animation assignment inspired by the reference prompt, focusing on fluid motion quality, mathematical precision, and modern frontend best practices.
 
-### 🎯 Key Requirements Met:
-1. **Hero Section Layout (Above the Fold):**
-   - Letter-spaced headline: `W E L C O M E   I T Z F I Z Z`.
-   - Four distinct impact metric cards (58%, 27%, 23%, 40%) with short descriptions matching the reference color scheme (Lime, Charcoal, Sky Blue, Orange).
-   - Horizontal asphalt track (`#1e1e1e`) on a clean grey canvas (`#d1d1d1`).
-   - Authentic top-down McLaren sports car driving along the track.
+### 🎯 Requirements Fulfilled:
 
-2. **Initial Load Animation (Requirement 2):**
-   - Staggered entrance for the headline letters (`fade + upward glide`).
-   - Car glides into the starting line on page mount.
-   - Impact metrics animate in one by one with a subtle delay (`back.out` easing) and animated numerical count-up (`0% → Target%`).
+1. **Hero Section Layout (First Screen / Above the Fold):**
+   - Letter-spaced headline: `W E L C O M E   I T Z F I Z Z` in bold grotesk typography (`Unbounded`).
+   - Impact metrics and statistics displayed prominently below the road:
+     - **72%** faster first response to customer requests
+     - **38%** fewer support calls after launch
+     - **3.4×** more repeat visits within 30 days
+     - **94%** of customers would recommend us
+   - Custom road track with animated repeating lane dashes (`repeating-linear-gradient`).
 
-3. **Scroll-Based Animation (Requirement 3):**
-   - Section is pinned using GSAP `ScrollTrigger` with `scrub: 1.2` for fluid easing and momentum.
-   - Car position is strictly tied to scroll progress (not time-based autoplay).
-   - Dynamic neon green trail (`#45db7d`) paints the road behind the car in real-time.
-   - Letters illuminate to solid bold black (`#0a0a0c`) as the car passes their X coordinates.
-   - Backward scrolling smoothly reverses the car, trail, and letters.
+2. **Initial Load Animation:**
+   - **Headline:** Letters rise smoothly from below with a staggered reveal (`power3.out`).
+   - **Car Entrance:** Vector supercar accelerates onto the track into starting position.
+   - **Statistics:** Metrics animate into view one by one with subtle delays and real-time numeric counter count-up (`power2.out`).
 
-4. **Performance & Motion Guidelines (Requirement 4):**
-   - GPU-accelerated transforms (`translate3d`, `scaleX`) avoiding costly DOM layout reflows during scroll.
-   - Bounding boxes and letter centers cached on initialize & resize events.
-   - Supports `prefers-reduced-motion` media queries.
+3. **Scroll-Based Animation (Core Feature):**
+   - The hero section is pinned (`pin: true`) across a scrubbed scroll timeline (`scrub: 1.2` for fluid momentum).
+   - Motion is strictly tied to scroll progress (not time-based autoplay).
+   - **Physics-Based Wheel Rotation:** Wheels rotate proportional to linear travel distance:
+     $$\theta = \frac{\Delta x}{r} \times \frac{180}{\pi}$$
+     Only tyres and spokes rotate, while calipers and brake discs remain stationary.
+   - **Headlight Letter Illumination:** As the car's headlights pass the center of each letter, the letter activates with a radiant golden glow (`0 0 32px rgba(255, 201, 60, 0.55)`).
+   - Full reverse scrubbing supported when scrolling backward.
 
-5. **Bonus Features:**
-   - **Dual Animation Modes:**
-     - **Hybrid Mode (Default):** Initial load stagger intro + interactive pulse/milestone highlights on scroll.
-     - **Scroll Reveal Mode:** Cards fade in sequentially only when the car reaches their trigger thresholds (matching the reference demo behavior).
-   - **Procedural Web Audio Engine:** Realistic sports car revving synthesized with Web Audio API (default muted, toggleable in navbar).
-   - **Top Scroll Progress Line:** Visual feedback of the drive's completion percentage.
-   - **Replay Control:** Easily replay the entrance animation at any time.
+4. **Motion & Performance Guidelines:**
+   - Exclusively GPU-accelerated transforms (`translate3d`, `rotate`).
+   - Cached element centers and road dimensions on initialization and resize events—zero DOM layout reflows during the scroll loop.
+   - Full accessibility support for `prefers-reduced-motion: reduce`.
 
 ---
 
@@ -46,9 +44,8 @@ This project recreates the interactive scroll-driven hero section inspired by th
 
 - **Framework:** Next.js 14 (App Router, Static Export `output: "export"`)
 - **Animation Engine:** GSAP 3 (GreenSock) + ScrollTrigger Plugin
-- **Styling:** Tailwind CSS (Custom Color Tokens & Responsive Typography)
-- **Audio:** Web Audio API (Synthesized engine pitch modulation)
-- **Deployment:** GitHub Pages / Vercel
+- **Styling:** Tailwind CSS (Custom Color Tokens & Typography)
+- **Vector Artwork:** Inline SVG Mid-Engine Supercar with Dynamic Spoke Geometry
 
 ---
 
@@ -69,22 +66,17 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ```bash
 npm run build
 ```
-Generates a static export in the `out/` folder ready for GitHub Pages or any static host.
+Generates the static export in the `out/` directory ready for deployment.
 
 ---
 
 ## 📦 GitHub Pages Deployment
 
-This repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that automatically builds and deploys to GitHub Pages upon pushing to the `main` branch.
-
-### Deployment Steps:
-1. Push this repository to GitHub:
+A GitHub Actions workflow is included at [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml):
+1. Push to GitHub:
    ```bash
    git remote add origin https://github.com/<your-username>/<your-repo-name>.git
-   git branch -M main
    git push -u origin main
    ```
-2. In your GitHub repository, go to **Settings** → **Pages**.
-3. Under **Build and deployment**, set **Source** to **GitHub Actions**.
-4. The workflow will automatically run, build, and deploy the live site to:
-   `https://<your-username>.github.io/<your-repo-name>/`
+2. In your repo on GitHub: Go to **Settings** → **Pages** → select **GitHub Actions** as the build source.
+3. The site will deploy to: `https://<your-username>.github.io/<your-repo-name>/`

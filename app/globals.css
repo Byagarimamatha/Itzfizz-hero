@@ -7,53 +7,46 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply antialiased bg-[#d1d1d1] font-body text-zinc-900;
+    @apply antialiased bg-ink font-body text-paper;
     overflow-x: hidden;
   }
 }
 
 @layer components {
-  /* Headline letters inside the road track */
-  .headline-letter {
-    color: rgba(255, 255, 255, 0.22);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-    will-change: color, transform;
-    transition: color 0.18s ease-out, transform 0.18s ease-out;
+  /* Headline letters: dim until the car's headlights pass them */
+  .char {
+    @apply inline-block text-paper/15;
+    transition: color 0.35s ease, text-shadow 0.35s ease, transform 0.25s ease;
+  }
+  .char.lit {
+    @apply text-paper;
+    text-shadow: 0 0 32px rgba(255, 201, 60, 0.55), 0 0 12px rgba(255, 201, 60, 0.3);
   }
 
-  /* When the McLaren car drives past each letter */
-  .headline-letter.lit {
-    color: #0d0d0f !important;
-    text-shadow: none;
-    transform: scale(1.02);
-  }
-
-  /* Stat card hover / micro-interaction */
-  .stat-card {
-    will-change: transform, opacity;
+  .dashes {
+    background: repeating-linear-gradient(
+      90deg,
+      rgba(245, 244, 255, 0.35) 0 40px,
+      transparent 40px 90px
+    );
   }
 }
 
-/* Custom sleek scrollbar */
+/* Sleek dark scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #c2c2c2;
+  background: #12102b;
 }
 ::-webkit-scrollbar-thumb {
-  background: #333333;
+  background: #2a2559;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #111111;
+  background: #ffc93c;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .headline-letter {
-    transition: none !important;
-  }
-  .stat-card {
-    transition: none !important;
-  }
+  .char { transition: none; }
 }

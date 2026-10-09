@@ -3,561 +3,261 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Car from "./Car";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const STATS_DATA = [
-  {
-    id: "box1",
-    num: 58,
-    suffix: "%",
-    label: "Increase in pick up point use",
-    bgColor: "#def54f", // lime yellow
-    textColor: "#111111",
-    desktopClass: "md:top-[5%] md:right-[31%] lg:right-[33%]",
-    scrollStart: 0.16,
-    scrollEnd: 0.36,
-  },
-  {
-    id: "box3",
-    num: 27,
-    suffix: "%",
-    label: "Increase in pick up point use",
-    bgColor: "#2e2e2e", // charcoal dark
-    textColor: "#ffffff",
-    desktopClass: "md:top-[5%] md:right-[6%] lg:right-[9%]",
-    scrollStart: 0.58,
-    scrollEnd: 0.78,
-  },
-  {
-    id: "box2",
-    num: 23,
-    suffix: "%",
-    label: "Decreased in customer phone calls",
-    bgColor: "#6ac9ff", // sky blue
-    textColor: "#111111",
-    desktopClass: "md:bottom-[5%] md:right-[35%] lg:right-[38%]",
-    scrollStart: 0.36,
-    scrollEnd: 0.56,
-  },
-  {
-    id: "box4",
-    num: 40,
-    suffix: "%",
-    label: "Decreased in customer phone calls",
-    bgColor: "#fa7328", // orange
-    textColor: "#111111",
-    desktopClass: "md:bottom-[5%] md:right-[8%] lg:right-[11%]",
-    scrollStart: 0.76,
-    scrollEnd: 0.96,
-  },
+const WORDS = ["WELCOME", "ITZFIZZ"];
+
+const STATS = [
+  { value: 72, suffix: "%", label: "faster first response to customer requests" },
+  { value: 38, suffix: "%", label: "fewer support calls after launch" },
+  { value: 3.4, decimals: 1, suffix: "×", label: "more repeat visits within 30 days" },
+  { value: 94, suffix: "%", label: "of customers would recommend us" },
 ];
 
-const HEADLINE_LETTERS = [
-  "W", "E", "L", "C", "O", "M", "E",
-  "\u00A0",
-  "I", "T", "Z", "F", "I", "Z", "Z"
-];
+const format = (v, s) => v.toFixed(s.decimals || 0) + s.suffix;
 
-export default function Hero({ mode = "hybrid", isMuted = true, replayKey = 0 }) {
-  const containerRef = useRef(null);
-  const trackRef = useRef(null);
-  const roadRef = useRef(null);
-  const carRef = useRef(null);
-  const trailRef = useRef(null);
-  const headlineRef = useRef(null);
-  const lettersRef = useRef([]);
-  const cardRefs = useRef({});
-  const cardValueRefs = useRef({});
-
+export default function Hero({ replayCount = 0, onReplay }) {
+  const root = useRef(null);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [activeCards, setActiveCards] = useState({});
-
-  // Web Audio engine oscillator
-  const audioCtxRef = useRef(null);
-  const oscRef = useRef(null);
-  const gainRef = useRef(null);
-  const filterRef = useRef(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    if (!isMuted && !audioCtxRef.current) {
-      try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const filter = ctx.createBiquadFilter();
-
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(55, ctx.currentTime);
-
-        filter.type = "lowpass";
-        filter.frequency.setValueAtTime(320, ctx.currentTime);
-
-        gain.gain.setValueAtTime(0.04, ctx.currentTime);
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start();
-
-        audioCtxRef.current = ctx;
-        oscRef.current = osc;
-        gainRef.current = gain;
-        filterRef.current = filter;
-      } catch {}
-    } else if (isMuted && gainRef.current && audioCtxRef.current) {
-      gainRef.current.gain.setTargetAtTime(0, audioCtxRef.current.currentTime, 0.05);
-    } else if (!isMuted && gainRef.current && audioCtxRef.current) {
-      gainRef.current.gain.setTargetAtTime(0.04, audioCtxRef.current.currentTime, 0.05);
-    }
-
-    return () => {
-      if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
-        try {
-          audioCtxRef.current.close();
-        } catch {}
-        audioCtxRef.current = null;
-      }
-    };
-  }, [isMuted]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      const road = roadRef.current;
-      const car = carRef.current;
-      const trail = trailRef.current;
-      const letters = lettersRef.current.filter(Boolean);
+      const q = gsap.utils.selector(root);
+      const hero = root.current;
+      const headline = q(".headline")[0];
+      const carIntro = q(".car-intro")[0];
+      const car = q(".car")[0];
+      const wheels = q(".wheel");
+      const dashes = q(".dashes")[0];
+      const stats = q(".stats")[0];
+      const chars = q(".char");
+      const statItems = q(".stat");
 
-      if (!road || !car || !trail || letters.length === 0) return;
-
-      let roadWidth = road.offsetWidth;
-      let carWidth = car.offsetWidth || 380;
-      let startX = -carWidth * 0.12;
-      let endX = roadWidth - carWidth * 0.35;
-      let letterPositions = [];
+      let carWidth = 0;
+      let startX = 0;
+      let centers = [];
+      const lit = chars.map(() => false);
 
       const measure = () => {
-        roadWidth = road.offsetWidth;
-        carWidth = car.offsetWidth || 380;
-        startX = -carWidth * 0.12;
-        endX = roadWidth - carWidth * 0.35;
+        carWidth = carIntro.offsetWidth;
+        centers = chars.map((c) => {
+          const r = c.getBoundingClientRect();
+          return r.left + r.width / 2;
+        });
+        // Park the car so its front stops just before the first letter
+        startX = Math.min(centers[0] - carWidth * 0.98 - 6, window.innerWidth * 0.06);
+      };
 
-        const roadRect = road.getBoundingClientRect();
-        letterPositions = letters.map((letter) => {
-          if (!letter) return 0;
-          const rect = letter.getBoundingClientRect();
-          return rect.left - roadRect.left + rect.width / 2;
+      const endX = () => window.innerWidth - carWidth - window.innerWidth * 0.04;
+
+      // Wheel rolling: angle = distance travelled / wheel radius
+      const rollWheels = () => {
+        const x = gsap.getProperty(carIntro, "x") + gsap.getProperty(car, "x");
+        const radius = 22 * (carWidth / 400);
+        const deg = (x / radius) * (180 / Math.PI);
+        wheels.forEach((w) => {
+          w.style.transform = `rotate(${deg}deg)`;
         });
       };
 
-      measure();
-
-      // Reset state
-      gsap.set(trail, { width: 0 });
-      gsap.set(car, { x: startX });
-
-      // Number count up animation helper
-      const animateNumbers = () => {
-        STATS_DATA.forEach((s) => {
-          const el = cardValueRefs.current[s.id];
-          if (!el) return;
-          const target = s.num;
-          const obj = { val: 0 };
-          gsap.to(obj, {
-            val: target,
-            duration: 1.4,
-            ease: "power2.out",
-            onUpdate: () => {
-              el.textContent = Math.round(obj.val) + s.suffix;
-            },
-          });
-        });
+      // Light each letter once the car's headlight front passes its center
+      const lightLetters = () => {
+        const front = gsap.getProperty(carIntro, "x") + gsap.getProperty(car, "x") + carWidth * 0.98;
+        for (let i = 0; i < chars.length; i++) {
+          const on = front > centers[i];
+          if (on !== lit[i]) {
+            lit[i] = on;
+            chars[i].classList.toggle("lit", on);
+          }
+        }
       };
 
-      // 1) INITIAL LOAD ANIMATION (Requirement 2)
-      const introTl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      const onCarMove = () => {
+        rollWheels();
+        lightLetters();
+      };
 
-      // Letters smooth staggered rise & subtle initial presence
-      introTl.fromTo(
-        letters,
-        { opacity: 0, y: 35, scale: 0.9 },
-        {
-          opacity: mode === "hybrid" ? 0.22 : 0,
-          y: 0,
-          scale: 1,
-          duration: 0.75,
-          stagger: 0.035,
-          ease: "power3.out",
-        },
-        0.1
-      );
-
-      // Car entrance: glides onto track
-      introTl.fromTo(
-        car,
-        { x: -carWidth * 1.25 },
-        {
-          x: startX,
-          duration: 1.1,
+      const countUp = (item, i) => {
+        const el = item.querySelector(".stat-value");
+        const s = STATS[i];
+        const state = { v: 0 };
+        return gsap.to(state, {
+          v: s.value,
+          duration: 1.6,
           ease: "power2.out",
           onUpdate: () => {
-            const currentX = gsap.getProperty(car, "x") + carWidth * 0.5;
-            gsap.set(trail, { width: Math.max(0, currentX) });
+            el.textContent = format(state.v, s);
           },
-        },
-        0.2
-      );
-
-      // Statistics cards initial animation
-      if (mode === "hybrid") {
-        const cardsArray = STATS_DATA.map((s) => cardRefs.current[s.id]).filter(Boolean);
-        introTl.fromTo(
-          cardsArray,
-          { opacity: 0, y: 30, scale: 0.93 },
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.65,
-            stagger: 0.15,
-            ease: "back.out(1.3)",
-          },
-          0.5
-        );
-        introTl.add(animateNumbers, 0.6);
-      } else {
-        // Pure reference-demo mode: start completely invisible
-        STATS_DATA.forEach((s) => {
-          const el = cardRefs.current[s.id];
-          if (el) gsap.set(el, { opacity: 0, scale: 0.9, y: 20 });
         });
-      }
+      };
 
-      // Update letters, trail, and audio
-      const updateCarProgress = (progress) => {
-        const currentCarX = gsap.getProperty(car, "x");
-        const carFrontX = currentCarX + carWidth * 0.94;
+      const mm = gsap.matchMedia();
 
-        gsap.set(trail, { width: Math.max(0, Math.min(roadWidth, carFrontX)) });
+      // Full motion experience
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        measure();
 
-        letters.forEach((letter, i) => {
-          if (!letter) return;
-          const letterX = letterPositions[i] || 0;
-          if (carFrontX >= letterX) {
-            letter.classList.add("lit");
-          } else {
-            letter.classList.remove("lit");
-          }
-        });
+        // 1) Load animation: letters rise in, car drives on, stats arrive one by one
+        const intro = gsap.timeline({ defaults: { ease: "power3.out" } });
+        intro
+          .from(chars, { yPercent: 60, opacity: 0, duration: 1, stagger: 0.045 })
+          .from(
+            carIntro,
+            {
+              x: () => -(startX + carWidth + 40),
+              duration: 1.4,
+              ease: "power2.out",
+              onUpdate: onCarMove,
+            },
+            0.3
+          )
+          .fromTo(statItems, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.9, stagger: 0.14 }, 0.9);
+        statItems.forEach((item, i) => intro.add(countUp(item, i), 0.9 + i * 0.14));
 
-        if (!isMuted && oscRef.current && filterRef.current && audioCtxRef.current) {
-          const baseFreq = 55 + progress * 160;
-          const filterFreq = 300 + progress * 1400;
-          oscRef.current.frequency.setTargetAtTime(baseFreq, audioCtxRef.current.currentTime, 0.05);
-          filterRef.current.frequency.setTargetAtTime(filterFreq, audioCtxRef.current.currentTime, 0.05);
+        // 2) Scroll: pinned hero, one scrubbed timeline
+        const onRefreshInit = () => measure();
+        ScrollTrigger.addEventListener("refreshInit", onRefreshInit);
+
+        gsap
+          .timeline({
+            defaults: { ease: "none" },
+            onUpdate: onCarMove,
+            scrollTrigger: {
+              trigger: hero,
+              start: "top top",
+              end: "+=250%",
+              pin: true,
+              scrub: 1.2,
+              anticipatePin: 1,
+              invalidateOnRefresh: true,
+              onRefresh: () => {
+                measure();
+                onCarMove();
+              },
+              onUpdate: (self) => {
+                setScrollProgress(self.progress);
+              },
+            },
+          })
+          .fromTo(car, { x: () => startX }, { x: endX, duration: 0.85 }, 0)
+          .to(dashes, { x: -900, duration: 0.85 }, 0)
+          .to(headline, { y: -30, duration: 0.85 }, 0)
+          .to(stats, { y: -40, duration: 0.85 }, 0)
+          .to({}, { duration: 0.15 });
+
+        const handleResize = () => {
+          measure();
+          ScrollTrigger.refresh();
+        };
+        window.addEventListener("resize", handleResize);
+
+        if (document.fonts) {
+          document.fonts.ready.then(() => ScrollTrigger.refresh());
         }
 
-        setScrollProgress(progress);
-      };
-
-      // 2) SCROLL-BASED ANIMATION (Requirement 3 & 4)
-      const scrollTriggerInstance = ScrollTrigger.create({
-        trigger: containerRef.current,
-        start: "top top",
-        end: "+=220%",
-        pin: trackRef.current,
-        scrub: 1.2, // Smooth interpolation and natural momentum
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-        onRefresh: () => {
-          measure();
-        },
-        onUpdate: (self) => {
-          const p = self.progress;
-          const currentX = startX + (endX - startX) * p;
-          gsap.set(car, { x: currentX });
-          updateCarProgress(p);
-
-          const newActive = {};
-          STATS_DATA.forEach((s) => {
-            const cardEl = cardRefs.current[s.id];
-            if (!cardEl) return;
-
-            if (mode === "scroll-only") {
-              if (p >= s.scrollStart) {
-                const cardProgress = Math.min(1, (p - s.scrollStart) / (s.scrollEnd - s.scrollStart));
-                gsap.set(cardEl, {
-                  opacity: cardProgress,
-                  scale: 0.9 + 0.1 * cardProgress,
-                  y: 20 * (1 - cardProgress),
-                });
-                newActive[s.id] = cardProgress > 0.8;
-              } else {
-                gsap.set(cardEl, { opacity: 0, scale: 0.9, y: 20 });
-              }
-            } else {
-              newActive[s.id] = p >= s.scrollStart;
-            }
-          });
-          setActiveCards(newActive);
-        },
+        return () => {
+          ScrollTrigger.removeEventListener("refreshInit", onRefreshInit);
+          window.removeEventListener("resize", handleResize);
+        };
       });
 
-      const handleResize = () => {
+      // Reduced motion: static accessible reveal
+      mm.add("(prefers-reduced-motion: reduce)", () => {
         measure();
-        ScrollTrigger.refresh();
-      };
-      window.addEventListener("resize", handleResize);
-
-      return () => {
-        window.removeEventListener("resize", handleResize);
-        scrollTriggerInstance.kill();
-      };
-    }, containerRef);
+        gsap.set(car, { x: endX });
+        gsap.set(statItems, { opacity: 1 });
+        chars.forEach((c) => c.classList.add("lit"));
+        statItems.forEach((item, i) => {
+          item.querySelector(".stat-value").textContent = format(STATS[i].value, STATS[i]);
+        });
+      });
+    }, root);
 
     return () => ctx.revert();
-  }, [mode, replayKey, isMuted]);
-
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+  }, [replayCount]);
 
   return (
-    <section ref={containerRef} className="relative w-full bg-[#d1d1d1]">
-      {/* 100vh Sticky/Pinned Track Screen */}
-      <div
-        ref={trackRef}
-        className="relative w-full h-screen overflow-hidden flex flex-col justify-between select-none"
-      >
-        {/* Top Scroll Progress Indicator */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-black/10 z-50">
-          <div
-            className="h-full bg-black transition-all duration-75"
-            style={{ width: `${Math.round(scrollProgress * 100)}%` }}
-          />
-        </div>
-
-        {/* TOP STAT CARDS CONTAINER */}
-        <div className="relative w-full pt-16 sm:pt-20 px-4 md:px-12 z-30 flex-none md:static">
-          {/* Mobile flex row fallback */}
-          <div className="flex md:hidden gap-3 justify-end items-start w-full">
-            {/* Box 1 (58% Lime) */}
-            <div
-              ref={(el) => (cardRefs.current["box1"] = el)}
-              className="stat-card rounded-2xl p-4 shadow-md w-1/2"
-              style={{ backgroundColor: "#def54f", color: "#111111" }}
-            >
-              <span className="text-3xl font-extrabold block">58%</span>
-              <p className="text-[11px] font-semibold text-black/85 leading-tight mt-1">
-                Increase in pick up point use
-              </p>
-            </div>
-            {/* Box 3 (27% Charcoal) */}
-            <div
-              ref={(el) => (cardRefs.current["box3"] = el)}
-              className="stat-card rounded-2xl p-4 shadow-md w-1/2"
-              style={{ backgroundColor: "#2e2e2e", color: "#ffffff" }}
-            >
-              <span className="text-3xl font-extrabold text-white block">27%</span>
-              <p className="text-[11px] font-medium text-white/85 leading-tight mt-1">
-                Increase in pick up point use
-              </p>
-            </div>
-          </div>
-
-          {/* Desktop Absolute: Box 1 (58% Lime) */}
-          <div
-            ref={(el) => (cardRefs.current["box1"] = el)}
-            className={`hidden md:flex stat-card absolute ${STATS_DATA[0].desktopClass} flex-col justify-center rounded-2xl p-6 shadow-lg transition-transform duration-300 w-64 lg:w-72 ${
-              activeCards["box1"] ? "ring-4 ring-black/20 scale-[1.03]" : ""
-            }`}
-            style={{ backgroundColor: "#def54f", color: "#111111" }}
-          >
-            <div className="flex items-baseline justify-between mb-1">
-              <span
-                ref={(el) => (cardValueRefs.current["box1"] = el)}
-                className="text-5xl lg:text-6xl font-extrabold tracking-tight"
-              >
-                58%
-              </span>
-              {activeCards["box1"] && (
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-black text-[#def54f] px-1.5 py-0.5 rounded">
-                  Passed
-                </span>
-              )}
-            </div>
-            <p className="text-sm font-semibold leading-snug text-black/90">
-              Increase in pick up point use
-            </p>
-          </div>
-
-          {/* Desktop Absolute: Box 3 (27% Charcoal) */}
-          <div
-            ref={(el) => (cardRefs.current["box3"] = el)}
-            className={`hidden md:flex stat-card absolute ${STATS_DATA[1].desktopClass} flex-col justify-center rounded-2xl p-6 shadow-lg transition-transform duration-300 w-64 lg:w-72 ${
-              activeCards["box3"] ? "ring-4 ring-white/30 scale-[1.03]" : ""
-            }`}
-            style={{ backgroundColor: "#2e2e2e", color: "#ffffff" }}
-          >
-            <div className="flex items-baseline justify-between mb-1">
-              <span
-                ref={(el) => (cardValueRefs.current["box3"] = el)}
-                className="text-5xl lg:text-6xl font-extrabold tracking-tight text-white"
-              >
-                27%
-              </span>
-              {activeCards["box3"] && (
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-white text-black px-1.5 py-0.5 rounded">
-                  Passed
-                </span>
-              )}
-            </div>
-            <p className="text-sm font-medium leading-snug text-white/90">
-              Increase in pick up point use
-            </p>
-          </div>
-        </div>
-
-        {/* CENTER ROAD STAGE */}
-        <div className="relative w-full my-auto z-20">
-          <div
-            ref={roadRef}
-            className="relative w-full h-[180px] sm:h-[200px] md:h-[210px] bg-[#1e1e1e] overflow-hidden flex items-center shadow-2xl"
-          >
-            {/* Dynamic Green Trail painted behind the car */}
-            <div
-              ref={trailRef}
-              className="absolute top-0 left-0 h-full bg-[#45db7d] z-10 will-change-[width]"
-              style={{ width: "0px" }}
-            />
-
-            {/* Letter-Spaced Headline starting at left 4% like reference demo */}
-            <div
-              ref={headlineRef}
-              className="absolute left-[3%] sm:left-[4%] md:left-[5%] top-1/2 -translate-y-1/2 z-20 pointer-events-none select-none flex items-center"
-            >
-              <h1 className="font-display font-black tracking-[0.16em] sm:tracking-[0.24em] md:tracking-[0.3em] text-[clamp(1.8rem,5.4vw,5.8rem)] leading-none flex items-center">
-                {HEADLINE_LETTERS.map((char, idx) => (
-                  <span
-                    key={idx}
-                    ref={(el) => (lettersRef.current[idx] = el)}
-                    className="headline-letter inline-block"
-                  >
-                    {char}
-                  </span>
-                ))}
-              </h1>
-            </div>
-
-            {/* Top-Down McLaren Sports Car */}
-            <div
-              ref={carRef}
-              className="absolute top-0 left-0 h-full flex items-center z-30 pointer-events-none will-change-transform"
-              style={{ transform: "translate3d(-400px, 0, 0)" }}
-            >
-              <img
-                src={`${basePath}/car.png`}
-                alt="McLaren 720S Sports Car Top View"
-                className="h-full w-auto object-contain select-none drop-shadow-[0_16px_28px_rgba(0,0,0,0.6)]"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* BOTTOM STAT CARDS CONTAINER */}
-        <div className="relative w-full pb-16 sm:pb-20 px-4 md:px-12 z-30 flex-none md:static">
-          {/* Mobile flex row fallback */}
-          <div className="flex md:hidden gap-3 justify-end items-end w-full">
-            {/* Box 2 (23% Sky Blue) */}
-            <div
-              ref={(el) => (cardRefs.current["box2"] = el)}
-              className="stat-card rounded-2xl p-4 shadow-md w-1/2"
-              style={{ backgroundColor: "#6ac9ff", color: "#111111" }}
-            >
-              <span className="text-3xl font-extrabold text-black block">23%</span>
-              <p className="text-[11px] font-semibold text-black/85 leading-tight mt-1">
-                Decreased in customer phone calls
-              </p>
-            </div>
-            {/* Box 4 (40% Orange) */}
-            <div
-              ref={(el) => (cardRefs.current["box4"] = el)}
-              className="stat-card rounded-2xl p-4 shadow-md w-1/2"
-              style={{ backgroundColor: "#fa7328", color: "#111111" }}
-            >
-              <span className="text-3xl font-extrabold text-black block">40%</span>
-              <p className="text-[11px] font-semibold text-black/85 leading-tight mt-1">
-                Decreased in customer phone calls
-              </p>
-            </div>
-          </div>
-
-          {/* Desktop Absolute: Box 2 (23% Sky Blue) */}
-          <div
-            ref={(el) => (cardRefs.current["box2"] = el)}
-            className={`hidden md:flex stat-card absolute ${STATS_DATA[2].desktopClass} flex-col justify-center rounded-2xl p-6 shadow-lg transition-transform duration-300 w-64 lg:w-72 ${
-              activeCards["box2"] ? "ring-4 ring-black/20 scale-[1.03]" : ""
-            }`}
-            style={{ backgroundColor: "#6ac9ff", color: "#111111" }}
-          >
-            <div className="flex items-baseline justify-between mb-1">
-              <span
-                ref={(el) => (cardValueRefs.current["box2"] = el)}
-                className="text-5xl lg:text-6xl font-extrabold tracking-tight text-black"
-              >
-                23%
-              </span>
-              {activeCards["box2"] && (
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-black text-[#6ac9ff] px-1.5 py-0.5 rounded">
-                  Passed
-                </span>
-              )}
-            </div>
-            <p className="text-sm font-semibold leading-snug text-black/90">
-              Decreased in customer phone calls
-            </p>
-          </div>
-
-          {/* Desktop Absolute: Box 4 (40% Orange) */}
-          <div
-            ref={(el) => (cardRefs.current["box4"] = el)}
-            className={`hidden md:flex stat-card absolute ${STATS_DATA[3].desktopClass} flex-col justify-center rounded-2xl p-6 shadow-lg transition-transform duration-300 w-64 lg:w-72 ${
-              activeCards["box4"] ? "ring-4 ring-black/20 scale-[1.03]" : ""
-            }`}
-            style={{ backgroundColor: "#fa7328", color: "#111111" }}
-          >
-            <div className="flex items-baseline justify-between mb-1">
-              <span
-                ref={(el) => (cardValueRefs.current["box4"] = el)}
-                className="text-5xl lg:text-6xl font-extrabold tracking-tight text-black"
-              >
-                40%
-              </span>
-              {activeCards["box4"] && (
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-black text-[#fa7328] px-1.5 py-0.5 rounded">
-                  Passed
-                </span>
-              )}
-            </div>
-            <p className="text-sm font-semibold leading-snug text-black/90">
-              Decreased in customer phone calls
-            </p>
-          </div>
-        </div>
-
-        {/* Scroll Instruction Floating Pill */}
-        <div
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-black/10 backdrop-blur-sm border border-black/10 text-xs font-semibold text-black/70 pointer-events-none transition-opacity duration-300 z-40"
-          style={{ opacity: Math.max(0, 1 - scrollProgress * 3.5) }}
-        >
-          <span className="inline-block animate-bounce">↓</span>
-          <span>Scroll down to drive the car</span>
-          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/10">
-            {Math.round(scrollProgress * 100)}%
+    <section
+      ref={root}
+      aria-labelledby="hero-title"
+      className="relative flex h-svh min-h-[560px] flex-col justify-between overflow-hidden bg-ink pb-[6vh] pt-[10vh] md:pt-[12vh]"
+    >
+      {/* Top Header / Nav Bar */}
+      <header className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-[5vw] py-5">
+        <div className="flex items-center gap-3">
+          <span className="font-display font-black text-xl tracking-wider text-paper">
+            ITZFIZZ
+          </span>
+          <span className="hidden sm:inline-block text-[11px] font-semibold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-road border border-lilac/20 text-lilac">
+            Motion Experience
           </span>
         </div>
+
+        {onReplay && (
+          <button
+            onClick={onReplay}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-road/80 hover:bg-road border border-lilac/30 text-paper text-xs font-medium transition-all hover:border-signal hover:text-signal"
+            title="Replay intro animation"
+          >
+            <span>↻</span>
+            <span>Replay Intro</span>
+          </button>
+        )}
+      </header>
+
+      {/* Main Headline */}
+      <h1
+        id="hero-title"
+        aria-label="Welcome ITZFIZZ"
+        className="headline flex flex-col items-center gap-y-1 px-[5vw] text-center font-display text-[11.5vw] font-bold leading-[1.1] tracking-[0.18em] will-change-transform md:flex-row md:flex-wrap md:justify-center md:gap-x-[0.9em] md:text-[clamp(1.6rem,5.4vw,6rem)] select-none"
+      >
+        {WORDS.map((word) => (
+          <span key={word} aria-hidden="true" className="inline-block -mr-[0.18em]">
+            {[...word].map((letter, i) => (
+              <span key={i} className="char">{letter}</span>
+            ))}
+          </span>
+        ))}
+      </h1>
+
+      {/* Road & Car Stage */}
+      <div className="relative h-[24vh] min-h-[150px] md:h-[28vh]" aria-hidden="true">
+        {/* Road Track & Moving Dashes */}
+        <div className="absolute inset-x-0 bottom-0 h-[38%] overflow-hidden bg-road border-y border-lilac/10 shadow-inner">
+          <div className="dashes absolute -left-[2%] top-1/2 -mt-0.5 h-1 w-[160%] will-change-transform" />
+        </div>
+
+        {/* Car Container: carIntro for entrance, car for scroll scrub */}
+        <div className="car-intro absolute bottom-[22%] left-0 w-[clamp(200px,26vw,400px)] will-change-transform">
+          <div className="w-full car will-change-transform">
+            <Car />
+          </div>
+        </div>
+      </div>
+
+      {/* Impact Metrics / Statistics */}
+      <ul className="stats mx-auto grid w-full max-w-[1160px] grid-cols-2 gap-x-6 gap-y-6 px-[5vw] will-change-transform md:grid-cols-4 md:gap-x-10 md:gap-y-8 z-20">
+        {STATS.map((s) => (
+          <li key={s.label} className="flex flex-col gap-2 opacity-0 stat">
+            <strong className="stat-value font-display text-[clamp(1.8rem,4vw,3.2rem)] font-medium leading-none tabular-nums text-signal">
+              {format(s.value, s)}
+            </strong>
+            <span className="max-w-[22ch] text-[0.85rem] text-paper/70 md:text-[0.95rem]">
+              {s.label}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      {/* Floating Scroll Cue */}
+      <div
+        className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-road/70 backdrop-blur-sm border border-lilac/20 text-[11px] font-medium text-paper/70 pointer-events-none transition-opacity duration-300 z-20"
+        style={{ opacity: Math.max(0, 1 - scrollProgress * 4) }}
+      >
+        <span className="animate-bounce text-signal">↓</span>
+        <span>Scroll to drive</span>
       </div>
     </section>
   );

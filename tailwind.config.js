@@ -4,13 +4,11 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        track: "#d1d1d1",
-        road: "#1e1e1e",
-        trail: "#45db7d",
-        statLime: "#def54f",
-        statDark: "#2c2c2c",
-        statBlue: "#6ac9ff",
-        statOrange: "#fa7328",
+        ink: "#12102b",
+        road: "#1d1b45",
+        lilac: "#8e88d9",
+        signal: "#ffc93c",
+        paper: "#f5f4ff",
       },
       fontFamily: {
         display: ["var(--font-display)", "Arial Black", "system-ui", "sans-serif"],
