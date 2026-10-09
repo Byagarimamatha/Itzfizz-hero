@@ -37,9 +37,16 @@ export default function Car() {
   return (
     <svg viewBox="0 0 400 130" xmlns="http://www.w3.org/2000/svg" focusable="false" className="block w-full h-auto overflow-visible">
       <defs>
-        <linearGradient id="beam" gradientUnits="userSpaceOnUse" x1="384" y1="0" x2="940" y2="0">
-          <stop offset="0" stopColor="#fff3c4" stopOpacity="0.6" />
-          <stop offset="1" stopColor="#fff3c4" stopOpacity="0" />
+        <linearGradient id="beam-core" gradientUnits="userSpaceOnUse" x1="384" y1="0" x2="900" y2="0">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.9" />
+          <stop offset="0.2" stopColor="#fff8dc" stopOpacity="0.65" />
+          <stop offset="0.6" stopColor="#ffc93c" stopOpacity="0.3" />
+          <stop offset="1" stopColor="#ffc93c" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="beam-glow" gradientUnits="userSpaceOnUse" x1="384" y1="0" x2="1050" y2="0">
+          <stop offset="0" stopColor="#fff3c4" stopOpacity="0.55" />
+          <stop offset="0.35" stopColor="#ffc93c" stopOpacity="0.22" />
+          <stop offset="1" stopColor="#ffc93c" stopOpacity="0" />
         </linearGradient>
         <linearGradient id="paint" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#ff6b7a" />
@@ -53,8 +60,11 @@ export default function Car() {
         </linearGradient>
       </defs>
 
-      {/* headlight beam */}
-      <polygon points="384,82 384,90 940,176 940,6" fill="url(#beam)" />
+      {/* headlight beam: atmospheric glow cone */}
+      <polygon points="384,80 384,92 1050,195 1050,-15" fill="url(#beam-glow)" />
+
+      {/* headlight beam: focused high-intensity core */}
+      <polygon points="384,82 384,88 900,165 900,20" fill="url(#beam-core)" />
 
       {/* soft ground shadow */}
       <ellipse cx="200" cy="127" rx="190" ry="4.5" fill="#000" opacity="0.35" />
@@ -88,8 +98,10 @@ export default function Car() {
       <path d="M44 99.4 H364" stroke="#ffc93c" strokeWidth="1.2" />
       <path d="M330 102 L394 100 L394 104 L336 105 Z" fill="#14102e" />
 
-      {/* LED headlight + tail light bar + exhaust */}
-      <path d="M352 78 L384 83 L382 87 L350 82 Z" fill="#fff8dc" />
+      {/* LED headlight with lens flare glow + tail light bar + exhaust */}
+      <circle cx="384" cy="84" r="14" fill="#ffc93c" opacity="0.4" />
+      <circle cx="384" cy="84" r="6" fill="#ffffff" opacity="0.9" />
+      <path d="M352 78 L384 83 L382 87 L350 82 Z" fill="#ffffff" />
       <path d="M12 78 L30 74 L30 78 L12 82 Z" fill="#ff3b4a" />
       <circle cx="14" cy="95" r="3" fill="#2c2c44" stroke="#d9d9e8" strokeWidth="1" />
 

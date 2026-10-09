@@ -38,39 +38,33 @@ export default function Hero() {
 
       // Cached measurements, updated on refresh only (no layout reads per scroll event)
       let carWidth = 0;
-      let startX = 0; // where the car waits at scroll progress 0
-      let centers = [];
+      let startX = 0; // car starts right at 0 (the starting line of the road)
       let charThresholds = [];
       let boxThresholds = [];
 
       const measure = () => {
         carWidth = carIntro.offsetWidth;
-        centers = chars.map((c) => {
-          const r = c.getBoundingClientRect();
-          return r.left + r.width / 2;
+
+        // Letter thresholds: Letter 0 ("W") activates as soon as scroll begins (~0.02)
+        // Letter 13 (last "Z") activates at ~0.60, ensuring ALL letters (including "I Z Z")
+        // are fully illuminated while the car drives across the right half of the track
+        charThresholds = chars.map((_, i) => {
+          const ratio = chars.length > 1 ? i / (chars.length - 1) : 0;
+          return 0.02 + ratio * 0.58; // maps i=0 -> 0.02, i=13 -> 0.60
         });
 
-        const firstChar = centers[0] || 0;
-        const lastChar = centers[chars.length - 1] || window.innerWidth;
-        const charSpan = Math.max(1, lastChar - firstChar);
+        // Box thresholds:
+        // Left column (Box 0 & Box 2) lights up as car passes left side (~0.16 & ~0.20)
+        // Right column (Box 1 & Box 3) lights up as car passes right side (~0.46 & ~0.50)
+        boxThresholds = [
+          0.16, // Box 0: Top-left (72%)
+          0.46, // Box 1: Top-right (38%)
+          0.20, // Box 2: Bottom-left (3.4×)
+          0.50, // Box 3: Bottom-right (94%)
+        ];
 
-        // Letter thresholds: Letter 0 ("W") requires initial scroll, Letter 13 ("Z") activates near ~80%
-        charThresholds = centers.map((cx) => {
-          const ratio = Math.max(0, Math.min(1, (cx - firstChar) / charSpan));
-          return 0.025 + ratio * 0.78; // maps [0, 1] to [0.025, 0.805]
-        });
-
-        // Box thresholds: Left metrics (~18-22%) and Right metrics (~56-60%)
-        boxThresholds = statItems.map((item, idx) => {
-          const r = item.getBoundingClientRect();
-          const cardTriggerX = r.left + r.width * 0.3;
-          const ratio = Math.max(0, Math.min(1, (cardTriggerX - firstChar) / charSpan));
-          const subtleOffset = idx === 2 || idx === 3 ? 0.04 : 0;
-          return Math.max(0.07, Math.min(0.85, 0.03 + ratio * 0.75 + subtleOffset));
-        });
-
-        // Park the car neatly on the left side of the road
-        startX = Math.max(16, window.innerWidth * 0.04);
+        // Start right at the beginning of the road (zero gap)
+        startX = 0;
       };
 
       // Resting position at the end of the scroll: car fully visible at the right
@@ -107,13 +101,13 @@ export default function Hero() {
 
         // 1. Headline characters lighting
         for (let i = 0; i < chars.length; i++) {
-          const threshold = charThresholds[i] ?? 0.025 + (i / chars.length) * 0.78;
+          const threshold = charThresholds[i] ?? 0.02 + (i / chars.length) * 0.58;
           chars[i].classList.toggle("lit", travelRatio >= threshold);
         }
 
         // 2. Metric boxes lighting
         for (let j = 0; j < statItems.length; j++) {
-          const threshold = boxThresholds[j] ?? 0.1 + (j / statItems.length) * 0.7;
+          const threshold = boxThresholds[j] ?? 0.15 + (j / statItems.length) * 0.35;
           statItems[j].classList.toggle("lit", travelRatio >= threshold);
         }
       };
@@ -146,7 +140,7 @@ export default function Hero() {
           .from(
             carIntro,
             {
-              x: () => -(startX + carWidth + 40),
+              x: () => -(carWidth + 60),
               duration: 1.4,
               ease: "power2.out",
               onUpdate: rollWheels,
