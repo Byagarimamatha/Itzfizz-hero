@@ -40,7 +40,8 @@ export default function Hero() {
       let carWidth = 0;
       let startX = 0; // where the car waits at scroll progress 0
       let centers = [];
-      const lit = chars.map(() => false);
+      let charThresholds = [];
+      let boxThresholds = [];
 
       const measure = () => {
         carWidth = carIntro.offsetWidth;
@@ -48,37 +49,73 @@ export default function Hero() {
           const r = c.getBoundingClientRect();
           return r.left + r.width / 2;
         });
-        // Park the car so its front stops just before the first letter: nothing is lit at the start
-        startX = Math.min(centers[0] - carWidth * 0.98 - 6, window.innerWidth * 0.06);
+
+        const firstChar = centers[0] || 0;
+        const lastChar = centers[chars.length - 1] || window.innerWidth;
+        const charSpan = Math.max(1, lastChar - firstChar);
+
+        // Letter thresholds: Letter 0 ("W") requires initial scroll, Letter 13 ("Z") activates near ~80%
+        charThresholds = centers.map((cx) => {
+          const ratio = Math.max(0, Math.min(1, (cx - firstChar) / charSpan));
+          return 0.025 + ratio * 0.78; // maps [0, 1] to [0.025, 0.805]
+        });
+
+        // Box thresholds: Left metrics (~18-22%) and Right metrics (~56-60%)
+        boxThresholds = statItems.map((item, idx) => {
+          const r = item.getBoundingClientRect();
+          const cardTriggerX = r.left + r.width * 0.3;
+          const ratio = Math.max(0, Math.min(1, (cardTriggerX - firstChar) / charSpan));
+          const subtleOffset = idx === 2 || idx === 3 ? 0.04 : 0;
+          return Math.max(0.07, Math.min(0.85, 0.03 + ratio * 0.75 + subtleOffset));
+        });
+
+        // Park the car neatly on the left side of the road
+        startX = Math.max(16, window.innerWidth * 0.04);
       };
 
       // Resting position at the end of the scroll: car fully visible at the right
       const endX = () => window.innerWidth - carWidth - window.innerWidth * 0.04;
 
       // Wheels roll with the car: angle = distance travelled / wheel radius.
-      // The wheel radius is 22 units in a 400-unit-wide SVG, so it scales with the car width.
       const rollWheels = () => {
         const x = gsap.getProperty(carIntro, "x") + gsap.getProperty(car, "x");
         const radius = 22 * (carWidth / 400);
         const deg = (x / radius) * (180 / Math.PI);
-        wheels.forEach((w) => { w.style.transform = `rotate(${deg}deg)`; });
+        wheels.forEach((w) => {
+          w.style.transform = `rotate(${deg}deg)`;
+        });
       };
 
-      // Light each letter once the car's front passes its centre
-      const lightLetters = () => {
-        const front = gsap.getProperty(carIntro, "x") + gsap.getProperty(car, "x") + carWidth * 0.98;
-        for (let i = 0; i < chars.length; i++) {
-          const on = front > centers[i];
-          if (on !== lit[i]) {
-            lit[i] = on;
-            chars[i].classList.toggle("lit", on);
-          }
+      // Dynamic scroll-driven lighting for headline letters and metric boxes
+      const updateLighting = (isScrolling, scrollProgress = 0) => {
+        // If at or near start (or destination reached in reverse), turn off ALL glowing elements
+        if (!isScrolling || scrollProgress <= 0.015) {
+          chars.forEach((c) => c.classList.remove("lit"));
+          statItems.forEach((b) => b.classList.remove("lit"));
+          return;
         }
-      };
 
-      const onCarMove = () => {
-        rollWheels();
-        lightLetters();
+        const currentX = gsap.getProperty(car, "x");
+        const totalTravel = endX() - startX;
+        const travelRatio = totalTravel > 0 ? (currentX - startX) / totalTravel : scrollProgress;
+
+        if (travelRatio <= 0.015) {
+          chars.forEach((c) => c.classList.remove("lit"));
+          statItems.forEach((b) => b.classList.remove("lit"));
+          return;
+        }
+
+        // 1. Headline characters lighting
+        for (let i = 0; i < chars.length; i++) {
+          const threshold = charThresholds[i] ?? 0.025 + (i / chars.length) * 0.78;
+          chars[i].classList.toggle("lit", travelRatio >= threshold);
+        }
+
+        // 2. Metric boxes lighting
+        for (let j = 0; j < statItems.length; j++) {
+          const threshold = boxThresholds[j] ?? 0.1 + (j / statItems.length) * 0.7;
+          statItems[j].classList.toggle("lit", travelRatio >= threshold);
+        }
       };
 
       const countUp = (item, i) => {
@@ -89,7 +126,9 @@ export default function Hero() {
           v: s.value,
           duration: 1.6,
           ease: "power2.out",
-          onUpdate: () => { el.textContent = format(state.v, s); },
+          onUpdate: () => {
+            el.textContent = format(state.v, s);
+          },
         });
       };
 
@@ -98,14 +137,20 @@ export default function Hero() {
       // ---- Full motion ----
       mm.add("(prefers-reduced-motion: no-preference)", () => {
         measure();
+        updateLighting(false, 0);
 
-        // 1) Load animation: letters rise in, car drives on, stats arrive one by one
+        // 1) Load animation: letters rise in, car rolls into parking spot, stats arrive one by one
         const intro = gsap.timeline({ defaults: { ease: "power3.out" } });
         intro
           .from(chars, { yPercent: 60, opacity: 0, duration: 1, stagger: 0.045 })
           .from(
             carIntro,
-            { x: () => -(startX + carWidth + 40), duration: 1.4, ease: "power2.out", onUpdate: onCarMove },
+            {
+              x: () => -(startX + carWidth + 40),
+              duration: 1.4,
+              ease: "power2.out",
+              onUpdate: rollWheels,
+            },
             0.3
           )
           .fromTo(statItems, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.9, stagger: 0.14 }, 0.9);
@@ -118,7 +163,6 @@ export default function Hero() {
         gsap
           .timeline({
             defaults: { ease: "none" },
-            onUpdate: onCarMove,
             scrollTrigger: {
               trigger: hero,
               start: "top top",
@@ -127,7 +171,15 @@ export default function Hero() {
               scrub: 1.2, // smoothing/interpolation so motion eases
               anticipatePin: 1,
               invalidateOnRefresh: true,
-              onRefresh: () => { measure(); onCarMove(); },
+              onUpdate: (self) => {
+                rollWheels();
+                updateLighting(true, self.progress);
+              },
+              onRefresh: () => {
+                measure();
+                rollWheels();
+                updateLighting(false, 0);
+              },
             },
           })
           .fromTo(car, { x: () => startX }, { x: endX, duration: 0.85 }, 0)
@@ -148,6 +200,7 @@ export default function Hero() {
         gsap.set(car, { x: endX });
         gsap.set(statItems, { opacity: 1 });
         chars.forEach((c) => c.classList.add("lit"));
+        statItems.forEach((b) => b.classList.add("lit"));
         statItems.forEach((item, i) => {
           item.querySelector(".stat-value").textContent = format(STATS[i].value, STATS[i]);
         });
@@ -183,15 +236,15 @@ export default function Hero() {
         {STATS.slice(0, 2).map((s) => (
           <li
             key={s.label}
-            className="stat relative flex flex-col justify-center gap-1.5 opacity-0 rounded-2xl bg-road/50 backdrop-blur-md border border-lilac/20 p-4 sm:p-5 shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 hover:border-signal/50 hover:bg-road/70 hover:shadow-[0_12px_40px_rgba(255,201,60,0.12)] hover:-translate-y-0.5 group"
+            className="stat stat-box relative flex flex-col justify-center gap-1.5 opacity-0 rounded-2xl p-4 sm:p-5 group cursor-default"
           >
             {/* Ambient specular highlight edge */}
-            <div className="absolute inset-x-5 top-0 h-[1px] bg-gradient-to-r from-transparent via-lilac/40 to-transparent pointer-events-none group-hover:via-signal/60 transition-colors" />
+            <div className="specular-line absolute inset-x-5 top-0 h-[1px] bg-gradient-to-r from-transparent via-lilac/40 to-transparent pointer-events-none transition-all duration-300" />
 
-            <strong className="stat-value font-display text-[clamp(1.7rem,3.4vw,2.8rem)] font-bold leading-none tabular-nums text-signal drop-shadow-[0_2px_12px_rgba(255,201,60,0.25)]">
+            <strong className="stat-value font-display text-[clamp(1.7rem,3.4vw,2.8rem)] font-bold leading-none tabular-nums text-signal drop-shadow-[0_2px_12px_rgba(255,201,60,0.25)] transition-all duration-300">
               {format(s.value, s)}
             </strong>
-            <span className="text-[0.78rem] sm:text-[0.88rem] text-paper/75 leading-snug font-medium group-hover:text-paper transition-colors">
+            <span className="stat-label text-[0.78rem] sm:text-[0.88rem] text-paper/75 leading-snug font-medium transition-colors duration-300">
               {s.label}
             </span>
           </li>
@@ -217,15 +270,15 @@ export default function Hero() {
         {STATS.slice(2, 4).map((s) => (
           <li
             key={s.label}
-            className="stat relative flex flex-col justify-center gap-1.5 opacity-0 rounded-2xl bg-road/50 backdrop-blur-md border border-lilac/20 p-4 sm:p-5 shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 hover:border-signal/50 hover:bg-road/70 hover:shadow-[0_12px_40px_rgba(255,201,60,0.12)] hover:-translate-y-0.5 group"
+            className="stat stat-box relative flex flex-col justify-center gap-1.5 opacity-0 rounded-2xl p-4 sm:p-5 group cursor-default"
           >
             {/* Ambient specular highlight edge */}
-            <div className="absolute inset-x-5 top-0 h-[1px] bg-gradient-to-r from-transparent via-lilac/40 to-transparent pointer-events-none group-hover:via-signal/60 transition-colors" />
+            <div className="specular-line absolute inset-x-5 top-0 h-[1px] bg-gradient-to-r from-transparent via-lilac/40 to-transparent pointer-events-none transition-all duration-300" />
 
-            <strong className="stat-value font-display text-[clamp(1.7rem,3.4vw,2.8rem)] font-bold leading-none tabular-nums text-signal drop-shadow-[0_2px_12px_rgba(255,201,60,0.25)]">
+            <strong className="stat-value font-display text-[clamp(1.7rem,3.4vw,2.8rem)] font-bold leading-none tabular-nums text-signal drop-shadow-[0_2px_12px_rgba(255,201,60,0.25)] transition-all duration-300">
               {format(s.value, s)}
             </strong>
-            <span className="text-[0.78rem] sm:text-[0.88rem] text-paper/75 leading-snug font-medium group-hover:text-paper transition-colors">
+            <span className="stat-label text-[0.78rem] sm:text-[0.88rem] text-paper/75 leading-snug font-medium transition-colors duration-300">
               {s.label}
             </span>
           </li>

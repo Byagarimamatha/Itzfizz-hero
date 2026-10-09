@@ -19,9 +19,10 @@
   }
   .char.lit {
     @apply text-paper;
-    text-shadow: 0 0 32px rgba(255, 201, 60, 0.45);
+    text-shadow: 0 0 32px rgba(255, 201, 60, 0.55), 0 0 12px rgba(255, 201, 60, 0.3);
   }
 
+  /* Moving lane dashes */
   .dashes {
     background: repeating-linear-gradient(
       90deg,
@@ -29,8 +30,45 @@
       transparent 40px 90px
     );
   }
+
+  /* Stat cards base resting state */
+  .stat-box {
+    border: 1px solid rgba(142, 136, 217, 0.22);
+    background: rgba(29, 27, 69, 0.55);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    transition: border-color 0.4s ease, box-shadow 0.4s ease, background-color 0.4s ease, transform 0.4s ease;
+  }
+
+  /* Stat cards when lit up by the car scroll or hover */
+  .stat-box.lit,
+  .stat-box:hover {
+    border-color: #ffc93c !important;
+    background: rgba(35, 30, 80, 0.85) !important;
+    box-shadow:
+      0 0 28px rgba(255, 201, 60, 0.45),
+      0 0 10px rgba(255, 201, 60, 0.3),
+      inset 0 0 18px rgba(255, 201, 60, 0.12) !important;
+    transform: translateY(-2px);
+  }
+
+  .stat-box.lit .stat-value,
+  .stat-box:hover .stat-value {
+    text-shadow: 0 0 20px rgba(255, 201, 60, 0.7), 0 0 35px rgba(255, 201, 60, 0.4);
+  }
+
+  .stat-box.lit .stat-label,
+  .stat-box:hover .stat-label {
+    color: #f5f4ff !important;
+  }
+
+  .stat-box.lit .specular-line,
+  .stat-box:hover .specular-line {
+    background: linear-gradient(90deg, transparent, #ffc93c, transparent) !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .char { transition: none; }
+  .stat-box { transition: none; }
 }
