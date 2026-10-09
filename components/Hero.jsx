@@ -179,13 +179,19 @@ export default function Hero() {
       </h1>
 
       {/* 2. Top 2 Metrics (Directly Under the Headline) */}
-      <ul className="stats-top mx-auto grid w-full max-w-[820px] grid-cols-2 gap-x-8 sm:gap-x-14 px-[5vw] will-change-transform z-10">
+      <ul className="stats-top mx-auto grid w-full max-w-[860px] grid-cols-2 gap-3 sm:gap-6 px-[5vw] will-change-transform z-10">
         {STATS.slice(0, 2).map((s) => (
-          <li key={s.label} className="flex flex-col gap-1.5 opacity-0 stat">
-            <strong className="stat-value font-display text-[clamp(1.6rem,3.4vw,2.8rem)] font-medium leading-none tabular-nums text-signal">
+          <li
+            key={s.label}
+            className="stat relative flex flex-col justify-center gap-1.5 opacity-0 rounded-2xl bg-road/50 backdrop-blur-md border border-lilac/20 p-4 sm:p-5 shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 hover:border-signal/50 hover:bg-road/70 hover:shadow-[0_12px_40px_rgba(255,201,60,0.12)] hover:-translate-y-0.5 group"
+          >
+            {/* Ambient specular highlight edge */}
+            <div className="absolute inset-x-5 top-0 h-[1px] bg-gradient-to-r from-transparent via-lilac/40 to-transparent pointer-events-none group-hover:via-signal/60 transition-colors" />
+
+            <strong className="stat-value font-display text-[clamp(1.7rem,3.4vw,2.8rem)] font-bold leading-none tabular-nums text-signal drop-shadow-[0_2px_12px_rgba(255,201,60,0.25)]">
               {format(s.value, s)}
             </strong>
-            <span className="max-w-[26ch] text-[0.82rem] text-paper/70 md:text-[0.92rem] leading-snug">
+            <span className="text-[0.78rem] sm:text-[0.88rem] text-paper/75 leading-snug font-medium group-hover:text-paper transition-colors">
               {s.label}
             </span>
           </li>
@@ -207,13 +213,19 @@ export default function Hero() {
       </div>
 
       {/* 4. Bottom 2 Metrics (Under the Road and Car) */}
-      <ul className="stats-bottom mx-auto grid w-full max-w-[820px] grid-cols-2 gap-x-8 sm:gap-x-14 px-[5vw] will-change-transform z-10">
+      <ul className="stats-bottom mx-auto grid w-full max-w-[860px] grid-cols-2 gap-3 sm:gap-6 px-[5vw] will-change-transform z-10">
         {STATS.slice(2, 4).map((s) => (
-          <li key={s.label} className="flex flex-col gap-1.5 opacity-0 stat">
-            <strong className="stat-value font-display text-[clamp(1.6rem,3.4vw,2.8rem)] font-medium leading-none tabular-nums text-signal">
+          <li
+            key={s.label}
+            className="stat relative flex flex-col justify-center gap-1.5 opacity-0 rounded-2xl bg-road/50 backdrop-blur-md border border-lilac/20 p-4 sm:p-5 shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 hover:border-signal/50 hover:bg-road/70 hover:shadow-[0_12px_40px_rgba(255,201,60,0.12)] hover:-translate-y-0.5 group"
+          >
+            {/* Ambient specular highlight edge */}
+            <div className="absolute inset-x-5 top-0 h-[1px] bg-gradient-to-r from-transparent via-lilac/40 to-transparent pointer-events-none group-hover:via-signal/60 transition-colors" />
+
+            <strong className="stat-value font-display text-[clamp(1.7rem,3.4vw,2.8rem)] font-bold leading-none tabular-nums text-signal drop-shadow-[0_2px_12px_rgba(255,201,60,0.25)]">
               {format(s.value, s)}
             </strong>
-            <span className="max-w-[26ch] text-[0.82rem] text-paper/70 md:text-[0.92rem] leading-snug">
+            <span className="text-[0.78rem] sm:text-[0.88rem] text-paper/75 leading-snug font-medium group-hover:text-paper transition-colors">
               {s.label}
             </span>
           </li>
